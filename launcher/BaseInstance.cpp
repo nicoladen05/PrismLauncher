@@ -36,6 +36,7 @@
  */
 
 #include "BaseInstance.h"
+#include "sync/SyncGuard.h"
 
 #include <QDebug>
 #include <QDir>
@@ -86,6 +87,7 @@ BaseInstance::BaseInstance(SettingsObject* globalSettings, std::unique_ptr<Setti
     m_settings->registerSetting("linkedInstances", "[]");
     m_settings->registerSetting("shortcuts", QString());
     m_settings->registerSetting("uuid", QString());
+    m_settings->registerSetting(SyncGuard::SETTING_KEY, QString());
 
     const auto savedUUID = m_settings->get("uuid").toString();
     if (savedUUID.isEmpty()) {
