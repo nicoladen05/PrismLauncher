@@ -168,9 +168,10 @@ bool isLinkTo(const QString& path, const QString& target)
     if (!isLink(path)) {
         return false;
     }
-    const auto resolved = QFileInfo(path).canonicalFilePath();
-    const auto expected = QFileInfo(target).canonicalFilePath();
-    return !resolved.isEmpty() && resolved == expected;
+    // Compare file identities rather than path strings, so short names, case and junctions don't matter.
+    std::error_code ec;
+    const bool same = fs::equivalent(toPath(path), toPath(target), ec);
+    return !ec && same;
 }
 
 bool removeLink(const QString& path)

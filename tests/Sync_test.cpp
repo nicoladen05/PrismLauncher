@@ -110,25 +110,31 @@ class SyncTest : public QObject {
         writeFile(a + "/options.txt", "fov:90");
         writeFile(b + "/saves/World/level.dat", "world from B");
 
+        // Windows without Developer Mode or elevation (like CI) can't make file symlinks; folders still link there.
+        const bool fileLinks = SyncLink::canCreateFileSymlinks(path("probe"));
+        const auto expectedFileStatus = fileLinks ? SyncEngine::ItemResult::Status::Linked : SyncEngine::ItemResult::Status::Copied;
+
         SyncEngine engineA(profile, a);
-        engineA.setFileSymlinksAllowed(true);
         auto results = engineA.attach();
         QVERIFY(SyncEngine::allSucceeded(results));
+        QCOMPARE(results.size(), 3);
+        QCOMPARE(results.at(0).status, SyncEngine::ItemResult::Status::Linked);
+        QCOMPARE(results.at(1).status, SyncEngine::ItemResult::Status::Linked);
+        QCOMPARE(results.at(2).status, expectedFileStatus);
         for (const auto& r : results) {
-            QCOMPARE(r.status, SyncEngine::ItemResult::Status::Linked);
             QVERIFY(r.backupPath.isEmpty());
         }
         // A's content moved into the profile and A now links to it.
         QCOMPARE(readFile(profile.contentPath("saves/World/level.dat")), QByteArray("world from A"));
+        QCOMPARE(readFile(profile.contentPath("options.txt")), QByteArray("fov:90"));
         QVERIFY(SyncLink::isLinkTo(a + "/saves/World", profile.contentPath("saves/World")));
-        QVERIFY(SyncLink::isLinkTo(a + "/options.txt", profile.contentPath("options.txt")));
+        QCOMPARE(SyncLink::isLinkTo(a + "/options.txt", profile.contentPath("options.txt")), fileLinks);
         QCOMPARE(readFile(a + "/config/mod.json"), QByteArray("{\"a\":1}"));
 
         // Attaching again is a no-op.
         QVERIFY(SyncEngine::allSucceeded(engineA.attach()));
 
         SyncEngine engineB(profile, b);
-        engineB.setFileSymlinksAllowed(true);
         results = engineB.attach();
         QVERIFY(SyncEngine::allSucceeded(results));
         // B's own world was kept aside, never deleted.
@@ -183,7 +189,6 @@ class SyncTest : public QObject {
         writeFile(a + "/saves/World/level.dat", "shared world");
 
         SyncEngine engine(profile, a);
-        engine.setFileSymlinksAllowed(true);
         QVERIFY(SyncEngine::allSucceeded(engine.attach()));
         QVERIFY(SyncLink::isLink(a + "/saves/World"));
 
@@ -199,7 +204,6 @@ class SyncTest : public QObject {
     {
         auto profile = makeProfile("empty");
         SyncEngine engine(profile, path("empty-a/minecraft"));
-        engine.setFileSymlinksAllowed(true);
         const auto results = engine.attach();
         QVERIFY(SyncEngine::allSucceeded(results));
         // Missing folders are created empty and linked; a missing file has nothing to link yet.
