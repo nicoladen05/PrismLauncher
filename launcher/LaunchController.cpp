@@ -41,6 +41,7 @@
 #include "minecraft/auth/AccountList.h"
 
 #include "net/NetUtils.h"
+#include "sync/SyncGuard.h"
 #include "ui/InstanceWindow.h"
 #include "ui/dialogs/CustomMessageBox.h"
 #include "ui/dialogs/MSALoginDialog.h"
@@ -71,6 +72,16 @@ void LaunchController::executeTask()
 
     if (!JavaCommon::checkJVMArgs(m_instance->settings()->get("JvmArgs").toString(), m_parentWidget)) {
         emitFailed(tr("Invalid Java arguments specified. Please fix this first."));
+        return;
+    }
+
+    const auto syncProfile = m_instance->settings()->get(SyncGuard::SETTING_KEY).toString();
+    if (const auto conflict = SyncGuard::findRunningConflict(m_instance->id(), syncProfile, SyncGuard::collectStates(*APPLICATION->instances()))) {
+        const auto reason = tr("The instance \"%1\" shares a sync profile with this one and is still running. "
+                               "Close it first, so the shared worlds and configs are not used by two games at once.")
+                                .arg(conflict->name);
+        QMessageBox::warning(m_parentWidget, tr("Shared instance is running"), reason);
+        emitFailed(reason);
         return;
     }
 

@@ -377,6 +377,18 @@ set(SCREENSHOTS_SOURCES
     screenshots/ImgurAPI.cpp
 )
 
+# syncing worlds, settings and configs between instances
+set(SYNC_SOURCES
+    sync/SyncEngine.h
+    sync/SyncEngine.cpp
+    sync/SyncGuard.h
+    sync/SyncGuard.cpp
+    sync/SyncLink.h
+    sync/SyncLink.cpp
+    sync/SyncProfile.h
+    sync/SyncProfile.cpp
+)
+
 set(TASKS_SOURCES
     # Tasks
     tasks/Task.h
@@ -745,6 +757,7 @@ set(LOGIC_SOURCES
     ${NEWS_SOURCES}
     ${MINECRAFT_SOURCES}
     ${SCREENSHOTS_SOURCES}
+    ${SYNC_SOURCES}
     ${TASKS_SOURCES}
     ${SETTINGS_SOURCES}
     ${JAVA_SOURCES}
